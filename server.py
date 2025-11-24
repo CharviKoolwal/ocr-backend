@@ -55,7 +55,8 @@ async def upload(file: UploadFile = File(...)):
     processed = preprocess_pil(pil)
     processed_pil = Image.fromarray(processed)
 
-    text = pytesseract.image_to_string(processed_pil, config="--oem 3 --psm 6")
+    text = pytesseract.image_to_string(processed_pil, lang="eng", config="--oem 3 --psm 6")
+
     date = extract_date(text)
     total = extract_total(text)
 
@@ -72,3 +73,4 @@ async def upload(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000)
+
