@@ -1,7 +1,9 @@
 fastapi
 uvicorn
+gunicorn
 pytesseract
 opencv-python
 Pillow
 numpy
 python-multipart
+
