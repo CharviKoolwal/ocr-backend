@@ -47,29 +47,35 @@ def extract_total(text):
             if nums: return nums[-1]
     return None
 
+# @app.post("/upload")
+# async def upload(file: UploadFile = File(...)):
+#     raw = await file.read()
+#     pil = Image.open(io.BytesIO(raw)).convert("RGB")
+
+#     processed = preprocess_pil(pil)
+#     processed_pil = Image.fromarray(processed)
+
+#     text = pytesseract.image_to_string(processed_pil, lang="eng", config="--oem 3 --psm 6")
+
+#     date = extract_date(text)
+#     total = extract_total(text)
+
+#     _, buff = cv2.imencode(".png", processed)
+#     processed_b64 = "data:image/png;base64," + base64.b64encode(buff).decode()
+
+#     return {
+#         "filename": file.filename,
+#         "text": text,
+#         "date": date,
+#         "total": total,
+#         "processed_image": processed_b64
+#     }
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
     raw = await file.read()
-    pil = Image.open(io.BytesIO(raw)).convert("RGB")
+    return {"status": "OK", "size": len(raw)}
 
-    processed = preprocess_pil(pil)
-    processed_pil = Image.fromarray(processed)
-
-    text = pytesseract.image_to_string(processed_pil, lang="eng", config="--oem 3 --psm 6")
-
-    date = extract_date(text)
-    total = extract_total(text)
-
-    _, buff = cv2.imencode(".png", processed)
-    processed_b64 = "data:image/png;base64," + base64.b64encode(buff).decode()
-
-    return {
-        "filename": file.filename,
-        "text": text,
-        "date": date,
-        "total": total,
-        "processed_image": processed_b64
-    }
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000)
+
