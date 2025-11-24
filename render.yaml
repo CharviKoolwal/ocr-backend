@@ -5,21 +5,3 @@ services:
     region: oregon
     dockerfilePath: ./Dockerfile
     plan: free
-    
-    # ❌ REMOVE buildCommand — Nixpacks won't run otherwise
-    # buildCommand: pip install -r requirements.txt
-
-    # Let Nixpacks handle everything
-    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
-    
-    nixpacks:
-      packages:
-        - tesseract
-        - tesseract-ocr
-        - tesseract-ocr-eng
-
-
-    env: docker
-    region: oregon
-    dockerfilePath: ./Dockerfile
-    plan: free
