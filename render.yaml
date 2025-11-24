@@ -7,3 +7,4 @@ services:
     nixpacks:
       packages:
         - tesseract
+        - tesseract-ocr
