@@ -1,87 +1,75 @@
+from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+from PIL import Image
 import io
 import base64
-import cv2
 import numpy as np
-from fastapi import FastAPI, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
-import easyocr
+import cv2
+import pytesseract
 import re
 
 app = FastAPI()
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["*"],  
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load EasyOCR reader ONCE
-reader = easyocr.Reader(['en'])
-
-
-# ---------------------
-# IMAGE PREPROCESSING
-# ---------------------
 def preprocess_pil(pil_img):
-    """Convert PIL image → OpenCV and preprocess."""
-    img = np.array(pil_img)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    img = cv2.GaussianBlur(img, (3, 3), 0)
-    img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    return img
+    img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    denoise = cv2.bilateralFilter(gray, 9, 75, 75)
+    thresh = cv2.adaptiveThreshold(denoise, 255,
+                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY, 31, 2)
+    return thresh
 
-
-# ---------------------
-# TEXT EXTRACTION HELPERS
-# ---------------------
 def extract_date(text):
-    date_pattern = r"(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})"
-    match = re.search(date_pattern, text)
-    return match.group(1) if match else None
-
+    patterns = [
+        r"\d{1,2}[/-]\d{1,2}[/-]\d{2,4}",
+        r"\d{4}[/-]\d{1,2}[/-]\d{1,2}",
+        r"[A-Za-z]{3,9}\s+\d{1,2},\s*\d{4}"
+    ]
+    for p in patterns:
+        m = re.search(p, text)
+        if m: return m.group()
+    return None
 
 def extract_total(text):
-    total_pattern = r"(?:TOTAL|AMOUNT DUE)[^\d]*(\d+\.\d{2})"
-    match = re.search(total_pattern, text, re.IGNORECASE)
-    return match.group(1) if match else None
+    lines = text.lower().splitlines()
+    for line in lines[::-1]:
+        if any(k in line for k in ("total","amount","subtotal","grand")):
+            nums = re.findall(r"\d+\.\d+|\d+", line)
+            if nums: return nums[-1]
+    return None
 
-
-# ---------------------
-# UPLOAD ENDPOINT
-# ---------------------
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    """Handle receipt upload and OCR."""
     raw = await file.read()
-
-    # Load image
     pil = Image.open(io.BytesIO(raw)).convert("RGB")
 
-    # Preprocess
     processed = preprocess_pil(pil)
+    processed_pil = Image.fromarray(processed)
 
-    # Run OCR
-    text_list = reader.readtext(processed, detail=0)
-    text = "\n".join(text_list)
+    text = pytesseract.image_to_string(processed_pil, lang="eng", config="--oem 3 --psm 6")
 
-    # Extract fields
     date = extract_date(text)
     total = extract_total(text)
 
-    # Encode processed image
     _, buff = cv2.imencode(".png", processed)
-    processed_b64 = (
-        "data:image/png;base64," + base64.b64encode(buff).decode()
-    )
+    processed_b64 = "data:image/png;base64," + base64.b64encode(buff).decode()
 
     return {
         "filename": file.filename,
-        "raw_text": text,
+        "text": text,
         "date": date,
         "total": total,
         "processed_image": processed_b64
     }
+
+if __name__ == "__main__":
+    uvicorn.run("server:app", host="0.0.0.0", port=8000)
