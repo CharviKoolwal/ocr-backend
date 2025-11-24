@@ -7,4 +7,3 @@ services:
     nixpacks:
       packages:
         - tesseract
-
