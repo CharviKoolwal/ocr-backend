@@ -1,10 +1,9 @@
 FROM python:3.10-slim
 
-# Install system dependencies
+# Install system dependencies (minimal & stable)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
-    tesseract-ocr-all \
     libtesseract-dev \
     libleptonica-dev \
     && apt-get clean
