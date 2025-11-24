@@ -5,5 +5,8 @@ opencv-python
 Pillow
 numpy
 python-multipart
+easyocr
+torch
+
 
 
