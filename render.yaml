@@ -1,7 +1,10 @@
 services:
   - type: web
     name: ocr-backend
-    env: python
+    env: docker
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    plan: free
     
     # ❌ REMOVE buildCommand — Nixpacks won't run otherwise
     # buildCommand: pip install -r requirements.txt
@@ -14,3 +17,9 @@ services:
         - tesseract
         - tesseract-ocr
         - tesseract-ocr-eng
+
+
+    env: docker
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    plan: free
